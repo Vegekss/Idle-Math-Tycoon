@@ -1,3 +1,36 @@
+// Initialisation
+const supabaseUrl = 'https://vrlosgclkggwcdnjswqb.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybG9zZ2Nsa2dnd2Nkbmpzd3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NzY2MTUsImV4cCI6MjA5ODA1MjYxNX0.OOo1F9egIJ0OqOiNT56_Y94ekT_75hvXUmBd6oW2-Os';
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+// Fonction pour sauvegarder (Appelle cette fonction au lieu de ton localStorage.setItem)
+async function saveGameToCloud(userId, gameState) {
+    const { data, error } = await supabase
+        .from('saves')
+        .upsert({ 
+            user_id: userId, 
+            data: gameState, 
+            updated_at: new Date() 
+        });
+    
+    if (error) console.error('Erreur sauvegarde:', error);
+    else console.log('Sauvegarde réussie !');
+}
+
+// Fonction pour charger (Appelle cette fonction au lieu de ton localStorage.getItem)
+async function loadGameFromCloud(userId) {
+    const { data, error } = await supabase
+        .from('saves')
+        .select('data')
+        .eq('user_id', userId)
+        .single();
+
+    if (error) {
+        console.error('Erreur chargement:', error);
+        return null;
+    }
+    return data ? data.data : null;
+}
 // =========================================================================
 // 0. DONNÉES GLOBALES DES SUCCÈS (20 TROPHÉES)
 // =========================================================================
