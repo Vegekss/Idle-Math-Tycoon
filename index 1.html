@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Idle Tycoon</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-matrix">
+
+    <header class="cyber-header">
+        <div class="stat-box">
+            <button id="btn-theme-switch">THEME</button>
+            <button id="btn-pause">PAUSE</button>
+        </div>
+        <div class="stat-box"><span class="label">SOLDE :</span><span id="credit-count" class="value budget">0</span> <span class="value budget">CC</span></div>
+        <div class="stat-box">
+            <span class="label">CPU :</span><span id="cpu-temp-status" class="value">35°C</span>
+            <span id="cpu-warning" class="critical-heat" style="display: none;"> [REBOOT]</span>
+        </div>
+        <div class="stat-box mobile-hide"><span class="label">RAM :</span><span id="ram-status" class="value">4 Go</span></div>
+        <div class="stat-box mobile-hide"><span id="hacker-level" class="value online">LEVEL 1</span></div>
+        <div class="stat-box"><span class="label">STRK :</span><span id="streak-count" class="value">0 🔥</span></div>
+        <div class="stat-box mobile-hide"><span class="label">AZOTE :</span><span id="nitrogen-charges" class="value" style="color: #00d2ff;">0 U</span></div>
+    </header>
+
+    <section id="bounty-panel" class="bounty-section hidden">
+        <div class="terminal-header alert-orange">CONTRAT_DE_PRIME_DISPONIBLE.EXE</div>
+        <div class="bounty-body">
+            <h2>🎯 CONTRAT : <span id="bounty-title">INTRUSION QUANTIQUE</span></h2>
+            <div class="bounty-zone">
+                <span id="bounty-step">VERROU 1/3 (MATHS)</span>
+                <span class="equation" id="bounty-question">3x + 4 = 19</span>
+                <div class="input-line centered">
+                    <span class="prompt">> x =</span>
+                    <input type="number" id="bounty-answer" autocomplete="off">
+                    <button id="btn-bounty-submit">BRISER</button>
+                </div>
+            </div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill orange-bar" id="bounty-timer-bar"></div></div>
+        </div>
+    </section>
+
+    <main class="cyber-grid">
+        
+        <section id="tab-core" class="terminal-section mobile-tab-content active">
+            <div class="terminal-header">SYSTEM_CORE.EXE</div>
+            <div class="terminal-body">
+                <p class="system-text">[SYSTEM] : Résolvez l'équation réseau.</p>
+                <div class="exercise-zone border-green">
+                    <span class="equation" id="math-question">2x + 5 = 15</span>
+                    <div class="input-line">
+                        <span class="prompt">> x =</span>
+                        <input type="number" id="user-answer" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                        <button id="btn-submit">EXEC</button>
+                        <button id="btn-hint" style="border-color: #ffaa00; color: #ffaa00; display: flex; align-items: center; gap: 4px;" title="Acheter un indice">
+                            💡 <span id="hint-cost" style="font-size: 0.65rem;">1.5k</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <span class="progress-label" style="color: #ffaa00; display: block; margin-bottom: 4px;">SYNCHRONISATION FLUX :</span>
+                    <div class="progress-bar-bg"><div id="inactivity-bar" class="progress-bar-fill orange-bar" style="width: 100%;"></div></div>
+                </div>
+                <p class="feedback-text" id="feedback"></p>
+
+                <div id="ram-module" class="crypto-dashboard hidden">
+                    <h3>[MONITORING INFRASTRUCTURE]</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-box"><span class="metric-label">CHARGE RÉSEAU</span><div class="progress-bar-bg"><div class="progress-bar-fill network-bar" id="net-load"></div></div></div>
+                        <div class="metric-box"><span class="metric-label">EFFICACITÉ LOGICIELLE</span><div class="progress-bar-bg"><div class="progress-bar-fill efficiency-bar" id="miner-efficiency"></div></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-labs" class="science-column mobile-tab-content">
+            <div class="physics-section">
+                <div class="terminal-header">WAVE_SYNCHRONIZER.SYS</div>
+                <div class="physics-body">
+                    <p class="system-text">[f = 1/T] Cadence Miner x2</p>
+                    <div class="mini-exercise border-blue">
+                        <div class="wave-info"><span id="physics-instruction">En attente...</span><span class="equation" id="physics-question">T = 0.00s</span></div>
+                        <div class="input-line"><span class="prompt">> f =</span><input type="number" id="physics-answer" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><button id="btn-physics-submit">SYNC</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chemistry-section" style="margin-top: 8px;">
+                <div class="terminal-header">CHEM_SYNTHESIZER.SYS</div>
+                <div class="chemistry-body">
+                    <p class="system-text">[m = n * M] Générateur N2</p>
+                    <div class="mini-exercise border-orange">
+                        <div class="chem-info"><span class="equation" id="chemistry-question">0 mol de N2</span><span class="data-hint">M(N2) = 28 g/mol</span></div>
+                        <div class="input-line"><span class="prompt">> m =</span><input type="number" id="chemistry-answer" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><button id="btn-chemistry-submit">FAB</button></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cyber-deco">
+                <div class="scanner-line"></div>
+                <pre class="ascii-art">
+[IDLE_MODE]
+> Routing bio-data...
+> Quantum link : OK
+> Awaiting input_
+                </pre>
+            </div>
+        </section>
+
+        <section id="tab-shop" class="hardware-section mobile-tab-content">
+            <div class="terminal-header">HARDWARE_SHOP.SYS</div>
+            <div class="hardware-body">
+                <div class="mobile-shop-status" style="display: none; margin-bottom: 8px; font-size: 0.75rem; background: rgba(0,0,0,0.3); padding: 6px; border: 1px dashed var(--primary-color);">
+                    RAM: <span id="ram-status-mobile" style="color:#fff;">4 Go</span> | 
+                    LVL: <span id="hacker-level-mobile" style="color:var(--primary-color);">1</span> | 
+                    N2: <span id="nitrogen-charges-mobile" style="color:#00d2ff;">0</span>
+                </div>
+
+                <div class="shop-item">
+                    <div class="item-info"><span class="item-name" id="ram-shop-title">Extension RAM</span><span class="item-cost" id="ram-shop-cost">200 CC</span></div>
+                    <button id="btn-buy-ram">UPGRADE</button>
+                </div>
+                <div class="shop-item">
+                    <div class="item-info"><span class="item-name" id="miner-shop-title">Auto-Miner.sh</span><span class="item-cost" id="miner-shop-cost">100 CC</span></div>
+                    <button id="btn-buy-miner">RUN</button>
+                </div>
+                <div class="shop-item">
+                    <div class="item-info"><span class="item-name" id="hacker-shop-title">Licence Clearance</span><span class="item-cost" id="hacker-shop-cost">400 CC</span></div>
+                    <button id="btn-buy-level2">UPGRADE</button>
+                </div>
+                <div class="shop-item">
+                    <div class="item-info"><span class="item-name" id="heat-shop-title">Unité Thermique</span><span class="item-cost" id="heat-shop-cost">300 CC</span></div>
+                    <button id="btn-buy-cooler">UPGRADE</button>
+                </div>
+                
+                <div class="shop-item" style="border-left-color: #00d2ff;">
+                    <div class="item-info"><span class="item-name" style="color: #00d2ff;">❄️ Flush Thermique</span><span class="item-cost" id="flush-temp-cost">50 000 CC</span></div>
+                    <button id="btn-flush-temp" style="border-color: #00d2ff; color: #00d2ff;">REFROIDIR</button>
+                </div>
+                
+                <div class="shop-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+                    <div class="item-info" style="display: flex; justify-content: space-between; width: 100%;">
+                        <span class="item-name" style="color: #00d2ff;">❄️ Réservoirs d'Azote</span>
+                        <span id="nitrogen-lock-status" style="font-size: 0.7rem; color: #ff3333; font-weight: bold;">VERROUILLÉ (THERMAL 7)</span>
+                    </div>
+                    <div style="display: flex; gap: 6px; width: 100%;">
+                        <button id="btn-buy-n2-1" style="flex: 1; padding: 4px; border-color: #52525b; color: #52525b;">+200 U<br><span style="font-size: 0.6rem;">10M CC</span></button>
+                        <button id="btn-buy-n2-2" style="flex: 1; padding: 4px; border-color: #52525b; color: #52525b;">+5 000 U<br><span style="font-size: 0.6rem;">200M CC</span></button>
+                        <button id="btn-buy-n2-3" style="flex: 1; padding: 4px; border-color: #52525b; color: #52525b;">+100 000 U<br><span style="font-size: 0.6rem;">3.5B CC</span></button>
+                    </div>
+                </div>
+                
+                <div class="shop-item" style="border-left-color: #ffaa00;">
+                    <div class="item-info"><span class="item-name" style="color: #ffaa00;">⚡ Overdrive Gain (x2 CC)</span><span class="item-cost">5 000 000 CC</span></div>
+                    <button id="btn-buy-boost-cc" style="border-color: #ffaa00; color: #ffaa00;">BOOST (30s)</button>
+                </div>
+                <div class="shop-item" style="border-left-color: #ffaa00;">
+                    <div class="item-info"><span class="item-name" style="color: #ffaa00;">🎯 Ciblage Réseau Max</span><span class="item-cost">15 000 000 CC</span></div>
+                    <button id="btn-buy-boost-target" style="border-color: #ffaa00; color: #ffaa00;">BOOST (30s)</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="logs-section">
+        <div class="terminal-header">SECURITY.LOG</div>
+        <div class="logs-body" id="log-container"></div>
+    </footer>
+
+    <nav class="mobile-nav-bar">
+        <button class="nav-item active" data-target="tab-core">💻 CORE</button>
+        <button class="nav-item" data-target="tab-labs">🧪 LABS</button>
+        <button class="nav-item" data-target="tab-shop">🛒 SHOP</button>
+        <button class="nav-item" data-target="tab-leaderboard">🏆 CLASSEMENT</button>
+    </nav>
+
+    <div id="attack-overlay" class="overlay hidden">
+        <div class="alert-box">
+            <div class="alert-header">!!! INTRUSION NET !!!</div>
+            <div class="alert-body">
+                <div class="attack-math"><span id="attack-question">5x - 2 = 18</span></div>
+                <div class="input-line centered"><span class="prompt">> x =</span><input type="number" id="attack-user-answer"><button id="btn-attack-submit">CONTRER</button></div>
+                <div class="progress-bar-bg red-bg"><div class="progress-bar-fill red-bar" id="attack-timer-bar"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pause-overlay" class="overlay hidden">
+        <div class="alert-box pause-box" style="width: 90%; max-width: 400px;">
+            <div class="alert-header">|| SYSTEM_PAUSED ||</div>
+            <div class="alert-body">
+                <h3 style="color: var(--primary-color); margin-bottom: 8px; font-size: 0.9rem;">SUCCÈS DÉVERROUILLÉS</h3>
+                <div id="achievements-list" style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; text-align: left;"></div>
+                
+                <button id="btn-resume" class="pause-btn-main">REPRENDRE</button>
+                <button id="btn-reset" class="pause-btn-danger">RESET COMPLET</button>
+            </div>
+        </div>
+    </div>
+    <!-- À côté de vos autres conteneurs <div id="tab-core" class="mobile-tab-content..."> -->
+<div id="tab-leaderboard" class="mobile-tab-content">
+    <div class="terminal-box" style="border-color: #ffaa00;">
+        <div class="terminal-header" style="background: #ffaa00; color: #000;">=== CLASSEMENT LOCAL ===</div>
+        <div class="terminal-body" style="padding: 10px;">
+            <p style="font-size: 0.8rem; color: #52525b; margin-bottom: 10px; text-transform: uppercase; text-align: center;">
+                Synchronisation PC <-> Mobile (Local)
+            </p>
+            <div id="mobile-leaderboard-list">
+                <div id="tab-leaderboard" class="mobile-tab-content">
+    <!-- C'est ici que le script va injecter les scores tout en haut -->
+    <div id="mobile-leaderboard-list"></div>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
