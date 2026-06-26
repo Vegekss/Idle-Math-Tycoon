@@ -1,32 +1,33 @@
 // Initialisation
 const supabaseUrl = 'https://vrlosgclkggwcdnjswqb.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybG9zZ2Nsa2dnd2Nkbmpzd3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NzY2MTUsImV4cCI6MjA5ODA1MjYxNX0.OOo1F9egIJ0OqOiNT56_Y94ekT_75hvXUmBd6oW2-Os';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // Fonction pour sauvegarder (Appelle cette fonction au lieu de ton localStorage.setItem)
 async function saveGameToCloud(userId, gameState) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('saves')
         .upsert({ 
             user_id: userId, 
+            grade: currentGrade || '2nde',
             data: gameState, 
             updated_at: new Date() 
-        });
+        }, { onConflict: 'user_id' });
     
     if (error) console.error('Erreur sauvegarde:', error);
-    else console.log('Sauvegarde réussie !');
+    else console.log('Sauvegarde cloud réussie !');
 }
 
 // Fonction pour charger (Appelle cette fonction au lieu de ton localStorage.getItem)
 async function loadGameFromCloud(userId) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('saves')
         .select('data')
         .eq('user_id', userId)
         .single();
 
     if (error) {
-        console.error('Erreur chargement:', error);
+        console.error('Erreur chargement cloud:', error);
         return null;
     }
     return data ? data.data : null;
@@ -164,9 +165,11 @@ function getSaveKey() {
 
 function saveGame() {
     if (!currentUser) return;
-    localStorage.setItem(getSaveKey(), JSON.stringify({
+    const gameState = {
         password: currentPassword, cryptoCredits, cpuTemperature, ramLevel, minerLevel, hackerLevel, coolerLevel, currentTheme, actionLogs, mathStreak, nitrogenCharges, unlockedAchievements, hasCompletedTutorial
-    }));
+    };
+    localStorage.setItem(getSaveKey(), JSON.stringify(gameState));
+    saveGameToCloud(currentUser, gameState);
 }
 
 function addLog(message, typeClass) {
@@ -349,9 +352,20 @@ function initLiveLeaderboard() {
     }
 }
 
-function refreshLiveLeaderboard() {
+async function refreshLiveLeaderboard() {
     let bestScores = {}; 
 
+    // Try fetching from Cloud first
+    const { data: cloudData, error } = await supabaseClient.from('saves').select('user_id, data');
+    if (!error && cloudData) {
+        cloudData.forEach(row => {
+            if (row.data && typeof row.data.cryptoCredits !== 'undefined') {
+                bestScores[row.user_id] = row.data.cryptoCredits;
+            }
+        });
+    }
+
+    // Fallback to local storage
     for (let i = 0; i < localStorage.length; i++) {
         let key = localStorage.key(i);
         if (key.startsWith('IdleTycoon_Save_')) {
@@ -930,11 +944,15 @@ function showLoginScreen() {
     inpP.addEventListener('keydown', e => { if(e.key==='Enter') login(); });
 }
 
-function loadSave(username, password, grade) {
+async function loadSave(username, password, grade) {
     currentUser = username; currentPassword = password; currentGrade = grade;
     let h = document.querySelector('#tab-core .terminal-header'); if(h) h.textContent = `SYSTEM_CORE.EXE - USER: [${currentUser}] - CLASSE: [${getGradeDisplay(currentGrade).toUpperCase()}]`;
     
-    let d = JSON.parse(localStorage.getItem(getSaveKey()));
+    // Essayer de charger depuis le cloud, sinon fallback local
+    let d = await loadGameFromCloud(username);
+    if (!d) {
+        d = JSON.parse(localStorage.getItem(getSaveKey()));
+    }
     
     if(d) { 
         cryptoCredits=d.cryptoCredits||0; cpuTemperature=d.cpuTemperature||35; ramLevel=d.ramLevel||0; minerLevel=d.minerLevel||0; 
