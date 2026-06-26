@@ -3,33 +3,78 @@ const supabaseUrl = 'https://vrlosgclkggwcdnjswqb.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybG9zZ2Nsa2dnd2Nkbmpzd3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NzY2MTUsImV4cCI6MjA5ODA1MjYxNX0.OOo1F9egIJ0OqOiNT56_Y94ekT_75hvXUmBd6oW2-Os';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+let cloudSaveTimer = null;
+let pendingGameState = null;
+
 // Fonction pour sauvegarder (Appelle cette fonction au lieu de ton localStorage.setItem)
-async function saveGameToCloud(userId, gameState) {
-    const { data, error } = await supabaseClient
-        .from('saves')
-        .upsert({ 
-            user_id: userId, 
-            grade: currentGrade || '2nde',
-            data: gameState, 
-            updated_at: new Date() 
-        }, { onConflict: 'user_id' });
+function saveGameToCloud(userId, gameState) {
+    pendingGameState = gameState;
+    if (cloudSaveTimer) return; // Déjà planifié
     
-    if (error) console.error('Erreur sauvegarde:', error);
-    else console.log('Sauvegarde cloud réussie !');
+    cloudSaveTimer = setTimeout(async () => {
+        const stateToSave = pendingGameState;
+        cloudSaveTimer = null;
+        
+        // 1. Récupérer ou créer l'utilisateur
+        let dbUserId = null;
+        const { data: userRow } = await supabaseClient.from('users').select('id').eq('username', userId).maybeSingle();
+        if (userRow) {
+            dbUserId = userRow.id;
+        } else {
+            const { data: newUser, error: errC } = await supabaseClient.from('users').insert({
+                username: userId,
+                password: currentPassword || 'default'
+            }).select('id').single();
+            if (newUser) dbUserId = newUser.id;
+            else { console.error("Erreur création user:", errC); return; }
+        }
+
+        // 2. Sauvegarder (Update ou Insert)
+        const { data: existingSave } = await supabaseClient.from('saves').select('id').eq('user_id', dbUserId).maybeSingle();
+        let error = null;
+        if (existingSave) {
+            const res = await supabaseClient.from('saves').update({
+                grade: currentGrade || '2nde',
+                data: stateToSave,
+                updated_at: new Date().toISOString()
+            }).eq('user_id', dbUserId);
+            error = res.error;
+        } else {
+            const res = await supabaseClient.from('saves').insert({
+                user_id: dbUserId,
+                grade: currentGrade || '2nde',
+                data: stateToSave,
+                updated_at: new Date().toISOString()
+            });
+            error = res.error;
+        }
+        
+        if (error) console.error('Erreur sauvegarde cloud:', error);
+        else console.log('Sauvegarde cloud réussie !');
+    }, 2500); // Sauvegarde cloud toutes les 2.5 secondes maximum
 }
 
 // Fonction pour charger (Appelle cette fonction au lieu de ton localStorage.getItem)
 async function loadGameFromCloud(userId) {
+    const { data: userRow } = await supabaseClient.from('users').select('id, password').eq('username', userId).maybeSingle();
+    if (!userRow) return null; // Utilisateur inconnu dans le cloud
+
     const { data, error } = await supabaseClient
         .from('saves')
         .select('data')
-        .eq('user_id', userId)
-        .single();
+        .eq('user_id', userRow.id)
+        .maybeSingle();
 
     if (error) {
         console.error('Erreur chargement cloud:', error);
         return null;
     }
+    
+    // On réinjecte le mot de passe depuis la DB pour que la vérification locale fonctionne
+    if (data && data.data) {
+        data.data.password = userRow.password;
+    }
+    
     return data ? data.data : null;
 }
 // =========================================================================
@@ -356,11 +401,12 @@ async function refreshLiveLeaderboard() {
     let bestScores = {}; 
 
     // Try fetching from Cloud first
-    const { data: cloudData, error } = await supabaseClient.from('saves').select('user_id, data');
+    const { data: cloudData, error } = await supabaseClient.from('saves').select('data, users(username)');
     if (!error && cloudData) {
         cloudData.forEach(row => {
-            if (row.data && typeof row.data.cryptoCredits !== 'undefined') {
-                bestScores[row.user_id] = row.data.cryptoCredits;
+            const pseudo = row.users?.username;
+            if (pseudo && row.data && typeof row.data.cryptoCredits !== 'undefined') {
+                bestScores[pseudo] = row.data.cryptoCredits;
             }
         });
     }
@@ -952,9 +998,18 @@ async function loadSave(username, password, grade) {
     let d = await loadGameFromCloud(username);
     if (!d) {
         d = JSON.parse(localStorage.getItem(getSaveKey()));
+        if (d) {
+            // Si on récupère depuis le local (ex: première co depuis PC après ajout Supabase), on force la sauvegarde cloud
+            saveGameToCloud(username, d);
+        }
     }
     
-    if(d) { 
+    if (d) { 
+        if (d.password && d.password !== password) {
+            alert("Mot de passe incorrect pour le profil " + username);
+            location.reload();
+            return;
+        }
         cryptoCredits=d.cryptoCredits||0; cpuTemperature=d.cpuTemperature||35; ramLevel=d.ramLevel||0; minerLevel=d.minerLevel||0; 
         hackerLevel=d.hackerLevel||1; coolerLevel=d.coolerLevel||0; currentTheme=d.currentTheme||'matrix'; 
         actionLogs=d.actionLogs||[]; mathStreak=d.mathStreak||0; nitrogenCharges=d.nitrogenCharges||0; unlockedAchievements=d.unlockedAchievements||[];
